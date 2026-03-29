@@ -26,6 +26,8 @@ from bot.handlers import (
     help_handler,
     province_callback_handler,
     jadwal_handler,
+    feedback_handler,
+    quote_handler,
     info_handler,
     error_handler,
     test_reminder_handler,
@@ -82,6 +84,8 @@ def main():
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("help", help_handler))
     app.add_handler(CommandHandler("jadwal", jadwal_handler))
+    app.add_handler(CommandHandler("feedback", feedback_handler))
+    app.add_handler(CommandHandler("quote", quote_handler))
     app.add_handler(CommandHandler("info", info_handler))
     app.add_handler(CommandHandler("test_reminder", test_reminder_handler))
 

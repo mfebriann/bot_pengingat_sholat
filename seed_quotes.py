@@ -19,6 +19,7 @@ logger = setup_logger("seed_quotes")
 QUOTES = [
     # ─── Ayat Al-Quran (Umum) ─────────────────────────────────────────────
     {
+        "category": "prayer",
         "type": "quran",
         "content": "Sesungguhnya sholat itu mencegah dari perbuatan keji dan mungkar.",
         "source": "Al-Quran",
@@ -28,6 +29,7 @@ QUOTES = [
         "prayer_time": None,
     },
     {
+        "category": "prayer",
         "type": "quran",
         "content": "Peliharalah semua sholat dan sholat wustha (Ashar). Dan berdirilah karena Allah dengan khusyuk.",
         "source": "Al-Quran",
@@ -37,6 +39,7 @@ QUOTES = [
         "prayer_time": "asr",
     },
     {
+        "category": "prayer",
         "type": "quran",
         "content": "Sesungguhnya sholat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman.",
         "source": "Al-Quran",
@@ -46,6 +49,7 @@ QUOTES = [
         "prayer_time": None,
     },
     {
+        "category": "prayer",
         "type": "quran",
         "content": "Dan dirikanlah sholat, tunaikanlah zakat, dan rukuklah beserta orang-orang yang rukuk.",
         "source": "Al-Quran",
@@ -55,6 +59,7 @@ QUOTES = [
         "prayer_time": None,
     },
     {
+        "category": "general",
         "type": "quran",
         "content": "Maka bertasbihlah kepada Allah pada petang dan pagi hari.",
         "source": "Al-Quran",
@@ -65,6 +70,7 @@ QUOTES = [
     },
     # ─── Ayat Al-Quran (Subuh) ───────────────────────────────────────────
     {
+        "category": "prayer",
         "type": "quran",
         "content": "Dirikanlah sholat dari sesudah matahari tergelincir sampai gelap malam dan (dirikanlah pula sholat) Subuh.",
         "source": "Al-Quran",
@@ -74,6 +80,7 @@ QUOTES = [
         "prayer_time": "fajr",
     },
     {
+        "category": "prayer",
         "type": "quran",
         "content": "Dan bertasbihlah dengan memuji Tuhanmu sebelum terbit matahari (Subuh).",
         "source": "Al-Quran",
@@ -85,18 +92,21 @@ QUOTES = [
 
     # ─── Hadits (Umum) ───────────────────────────────────────────────────
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Sholat adalah tiang agama. Barangsiapa yang mendirikannya, maka ia telah menegakkan agama.",
         "source": "HR. Baihaqi",
         "prayer_time": None,
     },
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Amalan yang pertama kali dihisab dari seorang hamba pada hari kiamat adalah sholatnya.",
         "source": "HR. Abu Dawud & Tirmidzi",
         "prayer_time": None,
     },
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Sholat adalah cahaya bagi orang beriman.",
         "source": "HR. Muslim",
@@ -105,18 +115,21 @@ QUOTES = [
     
     # ─── Hadits (Subuh) ──────────────────────────────────────────────────
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Dua rakaat Subuh (sholat sunnah Subuh) lebih baik daripada dunia dan seisinya.",
         "source": "HR. Muslim",
         "prayer_time": "fajr",
     },
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Seseorang yang sholat Subuh berjamaah, maka ia berada dalam jaminan Allah.",
         "source": "HR. Muslim",
         "prayer_time": "fajr",
     },
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Malaikat malam dan malaikat siang berkumpul pada waktu sholat Subuh.",
         "source": "HR. Bukhari",
@@ -125,12 +138,14 @@ QUOTES = [
 
     # ─── Hadits (Ashar) ──────────────────────────────────────────────────
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Barangsiapa yang meninggalkan sholat Ashar, maka terhapuslah amalannya.",
         "source": "HR. Bukhari",
         "prayer_time": "asr",
     },
     {
+        "category": "prayer",
         "type": "hadith",
         "content": "Seseorang tidak akan masuk neraka bagi yang melaksanakan sholat sebelum matahari terbit (Subuh) dan sebelum matahari terbenam (Ashar).",
         "source": "HR. Muslim",
@@ -139,21 +154,91 @@ QUOTES = [
 
     # ─── Nasihat (Umum) ──────────────────────────────────────────────────
     {
+        "category": "prayer",
         "type": "wisdom",
         "content": "Ketika kamu merasa berat untuk sholat, itulah saat kamu paling membutuhkannya.",
         "source": "Nasihat Ulama",
         "prayer_time": None,
     },
     {
+        "category": "prayer",
         "type": "wisdom",
         "content": "Sholatlah agar hatimu tenang, karena ketenangan hanya milik Allah.",
         "source": "Nasihat Bijak",
         "prayer_time": None,
     },
     {
+        "category": "prayer",
         "type": "wisdom",
         "content": "Jangan biarkan dunia menghalangimu dari sholat tepat waktu.",
         "source": "Nasihat Islami",
+        "prayer_time": None,
+    },
+
+    # ─── Quotes Islami (Umum, untuk /quote) ───────────────────────────────
+    {
+        "category": "general",
+        "type": "quran",
+        "content": "Ingatlah, hanya dengan mengingat Allah hati menjadi tenang.",
+        "source": "Al-Quran",
+        "surah_name": "Ar-Ra'd",
+        "surah_number": 13,
+        "ayah_number": 28,
+        "prayer_time": None,
+    },
+    {
+        "category": "general",
+        "type": "quran",
+        "content": "Sesungguhnya Allah bersama orang-orang yang sabar.",
+        "source": "Al-Quran",
+        "surah_name": "Al-Baqarah",
+        "surah_number": 2,
+        "ayah_number": 153,
+        "prayer_time": None,
+    },
+    {
+        "category": "general",
+        "type": "quran",
+        "content": "Boleh jadi kamu membenci sesuatu, padahal itu baik bagimu.",
+        "source": "Al-Quran",
+        "surah_name": "Al-Baqarah",
+        "surah_number": 2,
+        "ayah_number": 216,
+        "prayer_time": None,
+    },
+    {
+        "category": "general",
+        "type": "hadith",
+        "content": "Barangsiapa beriman kepada Allah dan hari akhir, hendaklah berkata baik atau diam.",
+        "source": "HR. Bukhari & Muslim",
+        "prayer_time": None,
+    },
+    {
+        "category": "general",
+        "type": "hadith",
+        "content": "Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.",
+        "source": None,
+        "prayer_time": None,
+    },
+    {
+        "category": "general",
+        "type": "wisdom",
+        "content": "Perbaiki hubunganmu dengan Allah, niscaya Allah akan memperbaiki urusanmu dengan manusia.",
+        "source": "Nasihat Ulama",
+        "prayer_time": None,
+    },
+    {
+        "category": "general",
+        "type": "wisdom",
+        "content": "Istiqamah itu berat, tapi indah bagi yang menjaganya.",
+        "source": None,
+        "prayer_time": None,
+    },
+    {
+        "category": "general",
+        "type": "wisdom",
+        "content": "Tawakkal bukan berarti pasrah tanpa usaha; ia adalah usaha maksimal disertai hati yang bersandar kepada Allah.",
+        "source": None,
         "prayer_time": None,
     },
 ]

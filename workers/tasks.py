@@ -90,7 +90,9 @@ def send_reminder(self, city: str, prayer_name: str, prayer_time: str, reminder_
         )
     else:
         # On-time reminder with random quote
-        quote = get_random_quote(prayer_name)
+        from services.prayer import get_random_prayer_quote
+
+        quote = get_random_prayer_quote(prayer_name)
         quote_text = ""
         if quote:
             quote_text = f"\n\n📖 <i>{quote.content}</i>"
@@ -101,7 +103,7 @@ def send_reminder(self, city: str, prayer_name: str, prayer_time: str, reminder_
 
         message = (
             f"🕌 <b>Waktu Sholat {display_name}</b>\n\n"
-            f"📍 Kota: <b>{city}</b>\n"
+            f"📍 Provinsi: <b>{city}</b>\n"
             f"🕐 Waktu: <b>{prayer_time} {tz_label}</b>\n\n"
             f"Saatnya menunaikan sholat <b>{display_name}</b>. "
             f"Semoga Allah senantiasa menerima ibadah kita. 🤲"

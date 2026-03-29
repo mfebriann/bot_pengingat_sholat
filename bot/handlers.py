@@ -11,13 +11,14 @@ from telegram.ext import ContextTypes
 
 from models.base import SessionLocal
 from models.user import User
-from services.prayer import get_prayer_times
+from services.prayer import get_prayer_times, get_random_islamic_quote, get_random_prayer_quote
 from utils.timezone import (
     get_timezone,
     get_timezone_str,
     get_timezone_label,
     PROVINCE_TIMEZONE_MAP,
 )
+from utils.quote_image import generate_quote_image_jpeg
 from utils.logger import setup_logger
 from config.settings import settings
 import kombu.exceptions
@@ -68,7 +69,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     welcome = (
         f"Assalamu'alaikum, {user.first_name}! 👋\n\n"
         "🕌 Selamat datang di <b>Bot Pengingat Sholat</b>.\n\n"
-        "Silakan pilih <b>Kota / Wilayah</b> Anda untuk mulai mengonfigurasi lokasi pengingat sholat:"
+        "Silakan pilih <b>Provinsi</b> Anda untuk mulai mengonfigurasi lokasi pengingat sholat:"
     )
     
     if update.callback_query:
@@ -88,7 +89,7 @@ async def province_callback_handler(update: Update, context: ContextTypes.DEFAUL
     tz_str = get_timezone_str(province_input)
     
     if not tz_str:
-        await query.message.reply_text("❌ Kota tidak valid.")
+        await query.message.reply_text("❌ Provinsi tidak valid.")
         return
 
     tz_label = get_timezone_label(tz_str)
@@ -112,16 +113,13 @@ async def province_callback_handler(update: Update, context: ContextTypes.DEFAUL
 
         await query.message.edit_text(
             f"✅ Lokasi berhasil di-set!\n\n"
-            f"📍 Kota: <b>{province_input}</b>\n"
+            f"📍 Provinsi: <b>{province_input}</b>\n"
             f"🕐 Zona Waktu: <b>{tz_label}</b> ({tz_str})\n\n"
             f"Kamu akan menerima pengingat sholat.\n"
             f"Ketik /jadwal untuk melihat jadwal hari ini.",
             parse_mode="HTML",
         )
-        logger.info(
-            "User %s set city to %s (%s)",
-            telegram_id, province_input, tz_label,
-        )
+        logger.info("User %s set province to %s (%s)", telegram_id, province_input, tz_label)
 
         # Trigger scheduling for this province, gracefully handling missing Redis
         # Wrap Celery delay in thread to prevent blocking asyncio loop if Redis hangs
@@ -164,11 +162,9 @@ async def jadwal_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if not user or not user.city:
         await update.message.reply_text(
-            "⚠️ Kamu belum set kota.\n\n"
-            "Silakan set kota terlebih dahulu:\n"
-            "Contoh:\n"
-            "<code>/setcity Jakarta</code>",
-            parse_mode="HTML",
+            "⚠️ Kamu belum set provinsi.\n\n"
+            "Silakan set provinsi terlebih dahulu:\n"
+            "Ketik /start lalu pilih provinsi.",
         )
         return
 
@@ -230,7 +226,7 @@ async def jadwal_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         lines.append(f"  {emoji}  <b>{display_name}</b>   →   {time_str} {tz_label}")
 
     lines.append("━━━━━━━━━━━━━━━━━━━━━━")
-    lines.append("\n🔔 Reminder otomatis aktif (H-10 menit & tepat waktu)")
+    lines.append("\n🔔 Reminder otomatis aktif (H-10 menit)")
 
     await loading_msg.edit_text("\n".join(lines), parse_mode="HTML")
     logger.info("Showed jadwal for user %s in %s", telegram_id, city)
@@ -242,15 +238,65 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Handle the /help command — list available commands."""
     help_text = (
         "📋 <b>Daftar Perintah</b>\n\n"
-        "🔹 /start — Mulai bot & Set Lokasi (Kota)\n"
+        "🔹 /start — Mulai bot & Set Lokasi (Provinsi)\n"
         "🔹 /jadwal — Lihat jadwal sholat hari ini\n"
         "🔹 /info — Lihat info lokasi & timezone kamu\n"
+        "🔹 /quote — Quote islami (gambar)\n"
+        "🔹 /feedback — Masukkan & saran\n"
         "🔹 /help — Tampilkan bantuan ini\n\n"
         "💡 <b>Tips:</b>\n"
-        "• Bot akan mengirimkan pengingat H-10 menit & tepat waktu otomatis\n"
-        "• Jadwal ini mencakup seluruh 38 Kota/Provinsi di Indonesia"
+        "• Bot akan mengirimkan pengingat H-10 menit otomatis\n"
+        "• Jadwal ini mencakup seluruh provinsi di Indonesia"
     )
     await update.message.reply_text(help_text, parse_mode="HTML")
+
+
+async def feedback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle the /feedback command — how to send suggestions."""
+    message = update.effective_message
+    if message is None:
+        return
+
+    await message.reply_text(
+        "💬 <b>Feedback / Masukkan</b>\n\n"
+        "Punya masukkan atau saran? Silakan hubungi:\n"
+        "@riann18",
+        parse_mode="HTML",
+    )
+
+
+async def quote_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle the /quote command — send a random Islamic quote as an image."""
+    message = update.effective_message
+    if message is None:
+        return
+
+    loading_msg = await message.reply_text("⏳ Sedang menyiapkan quote...")
+
+    quote = get_random_islamic_quote()
+    if not quote:
+        await loading_msg.edit_text(
+            "⚠️ Quote belum tersedia. Jalankan `python seed_quotes.py` untuk mengisi database."
+        )
+        return
+
+    source_text: str | None = quote.source.strip() if quote.source else None
+    if quote.surah_name and quote.ayah_number:
+        qs = f"QS. {quote.surah_name}: {quote.ayah_number}"
+        source_text = f"{source_text} ({qs})" if source_text else qs
+
+    try:
+        image_bytes = generate_quote_image_jpeg(quote.content, source_text=source_text)
+        image_bytes.name = "quote.jpg"
+    except Exception as e:
+        await loading_msg.edit_text(f"❌ Gagal membuat gambar quote: {e}")
+        return
+
+    await message.reply_photo(photo=image_bytes)
+    try:
+        await loading_msg.delete()
+    except Exception:
+        await loading_msg.edit_text("✅ Quote siap.")
 
 
 async def info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -265,10 +311,9 @@ async def info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     if not user or not user.city:
         await update.message.reply_text(
-            "⚠️ Kamu belum set kota.\n\n"
-            "Silakan set kota terlebih dahulu:\n"
-            "<code>/setcity Jakarta</code>",
-            parse_mode="HTML",
+            "⚠️ Kamu belum set provinsi.\n\n"
+            "Silakan set provinsi terlebih dahulu:\n"
+            "Ketik /start lalu pilih provinsi.",
         )
         return
 
@@ -285,11 +330,10 @@ async def info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     info_text = (
         "ℹ️ <b>Info Akun Kamu</b>\n\n"
-        f"📍 Kota: <b>{user.city}</b>\n"
+        f"📍 Provinsi: <b>{user.city}</b>\n"
         f"🕐 Zona Waktu: <b>{tz_label}</b> ({user.timezone})\n"
         f"🗓 Terdaftar: {registered_at}\n\n"
-        "Ganti kota? Ketik:\n"
-        "<code>/setcity NamaKota</code>"
+        ""
     )
     await update.message.reply_text(info_text, parse_mode="HTML")
 
@@ -311,7 +355,7 @@ async def test_reminder_handler(update: Update, context: ContextTypes.DEFAULT_TY
         session.close()
 
     if not user or not user.city:
-        await update.message.reply_text("⚠️ Silakan /setcity terlebih dahulu untuk simulasi kota Anda.")
+        await update.message.reply_text("⚠️ Silakan set provinsi terlebih dahulu (ketik /start) untuk simulasi Anda.")
         return
 
     city = user.city
@@ -330,8 +374,7 @@ async def test_reminder_handler(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text(f"🛠️ <b>TESTING: Pengingat H-10 Menit</b>\n\n{msg_before}", parse_mode="HTML")
 
     # 2. Test On-Time Reminder
-    from services.prayer import get_random_quote
-    quote = get_random_quote()
+    quote = get_random_prayer_quote(prayer_name)
     quote_text = ""
     if quote:
         quote_text = f"\n\n📖 <i>{quote.content}</i>"
@@ -342,7 +385,7 @@ async def test_reminder_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     msg_ontime = (
         f"🕌 <b>Waktu Sholat {display_name}</b>\n\n"
-        f"📍 Kota: <b>{city}</b>\n"
+        f"📍 Provinsi: <b>{city}</b>\n"
         f"🕐 Waktu: <b>{prayer_time} {tz_label}</b>\n\n"
         f"Saatnya menunaikan sholat <b>{display_name}</b>. "
         f"Semoga Allah senantiasa menerima ibadah kita. 🤲"

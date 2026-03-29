@@ -76,10 +76,12 @@ def get_prayer_times_sync(city: str, date_str: str | None = None) -> dict[str, s
         return asyncio.run(get_prayer_times(city, date_str))
 
 
-def get_random_quote(prayer_name: str | None = None) -> Quote | None:
+def get_random_prayer_quote(prayer_name: str | None = None) -> Quote | None:
     """
-    Get a random Islamic quote from the database.
-    Can filter by prayer_name (e.g. 'Subuh', 'Ashar').
+    Get a random prayer-related quote from the database.
+
+    If prayer_name is provided, it will prefer quotes tagged for that prayer time,
+    while still allowing general prayer quotes (prayer_time NULL).
 
     Args:
         prayer_name: Optional name of the prayer time.
@@ -88,10 +90,12 @@ def get_random_quote(prayer_name: str | None = None) -> Quote | None:
         A Quote object or None if no quotes exist.
     """
     session: Session = SessionLocal()
-    from sqlalchemy import or_
     try:
         query = session.query(Quote)
+        query = query.filter(Quote.category == "prayer")
         if prayer_name:
+            from sqlalchemy import or_
+
             # Normalize for matching ('Subuh' -> 'subuh')
             p_name = prayer_name.lower().strip()
             # Select quotes matching THIS prayer_time OR general quotes (NULL)
@@ -109,3 +113,29 @@ def get_random_quote(prayer_name: str | None = None) -> Quote | None:
         return None
     finally:
         session.close()
+
+
+def get_random_islamic_quote() -> Quote | None:
+    """
+    Get a random Islamic quote (any category).
+    """
+    session: Session = SessionLocal()
+    try:
+        quote = session.query(Quote).order_by(func.random()).first()
+        if quote:
+            _ = quote.content, quote.source, quote.type
+            _ = quote.surah_name, quote.surah_number, quote.ayah_number
+            _ = quote.prayer_time, quote.category
+        return quote
+    except Exception as e:
+        logger.error("Error fetching random islamic quote: %s", e)
+        return None
+    finally:
+        session.close()
+
+
+def get_random_quote(prayer_name: str | None = None) -> Quote | None:
+    """
+    Backwards-compatible alias: returns prayer-related quotes.
+    """
+    return get_random_prayer_quote(prayer_name)

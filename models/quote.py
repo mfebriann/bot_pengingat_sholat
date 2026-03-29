@@ -14,6 +14,7 @@ class Quote(Base):
     __tablename__ = "quotes"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    category: Mapped[str] = mapped_column(String(30), nullable=False, default="general")
     type: Mapped[str] = mapped_column(String(50), nullable=False, default="hadith")
     content: Mapped[str] = mapped_column(Text, nullable=False)
     source: Mapped[str | None] = mapped_column(String(200), nullable=True)
