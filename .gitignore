@@ -1,0 +1,25 @@
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Logs
+logs/*.log
+
+# Celery
+celerybeat-schedule
+celerybeat-schedule.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
