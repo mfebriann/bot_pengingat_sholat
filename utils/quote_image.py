@@ -27,16 +27,39 @@ def _candidate_font_paths(names: Iterable[str]) -> list[str]:
         for name in names:
             candidates.append(str(windows_fonts / name))
 
-    # Common Linux/macOS locations (harmless if missing)
-    linux_dirs = [
+    # Linux (Debian/Ubuntu) standard locations
+    linux_bases = [
+        Path("/usr/share/fonts/truetype/dejavu"),
+        Path("/usr/share/fonts/truetype/liberation"),
         Path("/usr/share/fonts"),
         Path("/usr/local/share/fonts"),
+    ]
+    for base in linux_bases:
+        if not base.exists():
+            continue
+        for name in names:
+            # Check direct match
+            p = base / name
+            if p.exists():
+                candidates.append(str(p))
+            else:
+                # Check recursively (limit depth to avoid performance issues)
+                try:
+                    for found in base.rglob(name):
+                        candidates.append(str(found))
+                        break # Take the first one we find for this name
+                except Exception:
+                    pass
+
+    # macOS locations
+    mac_bases = [
         Path("/Library/Fonts"),
         Path("/System/Library/Fonts"),
     ]
-    for base in linux_dirs:
-        for name in names:
-            candidates.append(str(base / name))
+    for base in mac_bases:
+        if base.exists():
+            for name in names:
+                candidates.append(str(base / name))
 
     # Also try bare names (Pillow can sometimes resolve)
     candidates.extend(names)
