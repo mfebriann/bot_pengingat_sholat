@@ -36,8 +36,21 @@ async def fetch_prayer_times(city: str, date: str | None = None) -> dict[str, st
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            # Increased timeout to 20s for slow API responses
+            async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
                 response = await client.get(url, params=params)
+                
+                # Check for 502 Bad Gateway or 504 Gateway Timeout
+                if response.status_code in [502, 504]:
+                    logger.warning(
+                        "Aladhan API returned %d for %s (attempt %d/%d). Retrying...",
+                        response.status_code, city, attempt, MAX_RETRIES
+                    )
+                    if attempt < MAX_RETRIES:
+                        import asyncio
+                        await asyncio.sleep(2 * attempt)
+                        continue
+
                 response.raise_for_status()
 
             data = response.json()
@@ -68,11 +81,21 @@ async def fetch_prayer_times(city: str, date: str | None = None) -> dict[str, st
                 "HTTP error fetching prayer times for %s (attempt %d/%d): %s",
                 city, attempt, MAX_RETRIES, e,
             )
+            # Retry on 5xx errors
+            if attempt < MAX_RETRIES and e.response.status_code >= 500:
+                import asyncio
+                await asyncio.sleep(2 * attempt)
+                continue
         except httpx.RequestError as e:
             logger.error(
                 "Request error fetching prayer times for %s (attempt %d/%d): %s",
                 city, attempt, MAX_RETRIES, e,
             )
+            # Retry on request errors (timeout, connection)
+            if attempt < MAX_RETRIES:
+                import asyncio
+                await asyncio.sleep(2 * attempt)
+                continue
         except (KeyError, ValueError) as e:
             logger.error(
                 "Parse error for %s API response (attempt %d/%d): %s",

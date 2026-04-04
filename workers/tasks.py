@@ -25,9 +25,12 @@ from utils.logger import setup_logger
 logger = setup_logger("workers.tasks")
 
 
-def _send_telegram_message(chat_id: int, text: str) -> bool:
+import time
+
+
+def _send_telegram_message(chat_id: int, text: str, max_retries: int = 3) -> bool:
     """
-    Send a message via Telegram Bot API (synchronous, for Celery workers).
+    Send a message via Telegram Bot API with retries and exponential backoff.
 
     Returns True if sent successfully.
     """
@@ -37,14 +40,45 @@ def _send_telegram_message(chat_id: int, text: str) -> bool:
         "text": text,
         "parse_mode": "HTML",
     }
-    try:
-        response = httpx.post(url, json=payload, timeout=15.0)
-        response.raise_for_status()
-        logger.info("Message sent to chat_id=%s", chat_id)
-        return True
-    except httpx.HTTPError as e:
-        logger.error("Failed to send message to chat_id=%s: %s", chat_id, e)
-        return False
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Use httpx.post directly (sync)
+            response = httpx.post(url, json=payload, timeout=20.0)
+            
+            # Special case: 429 Too Many Requests (Rate limit)
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 5))
+                logger.warning("Rate limited by Telegram. Waiting %ds (Attempt %d/%d)", retry_after, attempt, max_retries)
+                time.sleep(retry_after)
+                continue
+                
+            response.raise_for_status()
+            logger.info("Message sent to chat_id=%s", chat_id)
+            return True
+            
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            # Check if it's a 4xx error that won't succeed after retry (e.g., bot blocked)
+            if isinstance(e, httpx.HTTPStatusError):
+                status_code = e.response.status_code
+                # 403 Forbidden: Bot blocked by user OR 400 Bad Request: Chat not found
+                if 400 <= status_code < 500 and status_code != 429:
+                    logger.error("Permanent failure sending to chat_id=%s (Status %d): %s", chat_id, status_code, e)
+                    return False
+            
+            # Retry for network errors (ReadError, ConnectionError) or 5xx (Bad Gateway, etc.)
+            if attempt < max_retries:
+                wait_time = 2 ** attempt  # 2, 4, 8s backoff
+                logger.warning(
+                    "Attempt %d/%d failed for chat_id=%s: %s. Retrying in %ds...", 
+                    attempt, max_retries, chat_id, e, wait_time
+                )
+                time.sleep(wait_time)
+            else:
+                logger.error("All %d retries failed for chat_id=%s: %s", max_retries, chat_id, e)
+                
+    return False
+
 
 
 def _get_users_by_city(city: str) -> list[int]:
